@@ -31,6 +31,7 @@ namespace RothsFarmIt
         {
             this.startBtn = new System.Windows.Forms.Button();
             this.stopBtn = new System.Windows.Forms.Button();
+            this.frstLoginBtn = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // startBtn
@@ -53,11 +54,22 @@ namespace RothsFarmIt
             this.stopBtn.UseVisualStyleBackColor = true;
             this.stopBtn.Click += new System.EventHandler(this.stopBtn_Click);
             // 
+            // frstLoginBtn
+            // 
+            this.frstLoginBtn.Location = new System.Drawing.Point(76, 70);
+            this.frstLoginBtn.Name = "frstLoginBtn";
+            this.frstLoginBtn.Size = new System.Drawing.Size(75, 23);
+            this.frstLoginBtn.TabIndex = 2;
+            this.frstLoginBtn.Text = "First Login";
+            this.frstLoginBtn.UseVisualStyleBackColor = true;
+            this.frstLoginBtn.Click += new System.EventHandler(this.frstLoginBtn_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(240, 99);
+            this.Controls.Add(this.frstLoginBtn);
             this.Controls.Add(this.stopBtn);
             this.Controls.Add(this.startBtn);
             this.Name = "Form1";
@@ -70,6 +82,7 @@ namespace RothsFarmIt
 
         private System.Windows.Forms.Button startBtn;
         private System.Windows.Forms.Button stopBtn;
+        private System.Windows.Forms.Button frstLoginBtn;
     }
 }
 
