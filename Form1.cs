@@ -91,14 +91,13 @@ namespace RothsFarmIt
             SendMessage(proc.MainWindowHandle, WM_LBUTTONUP, keybind, 0);
         }
 
-        public static void autoPots(Process proc)
+        public static void autoPots(Process proc, CancellationToken token)
         {
-            while (true)
+            while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    int hpAddr = 0x010DCE10;  //New Era Addr
-                                              //int hpAddr = 0x00E4CAF4;  //Vicious
+                    int hpAddr = 0x010DCE10;
                     int hpMaxAddr = hpAddr + 4;
                     int spAddr = hpAddr + 8;
                     int spMaxAddr = hpAddr + 12;
@@ -124,6 +123,10 @@ namespace RothsFarmIt
                         Thread.Sleep(100);
                         pressKey(proc, Keys.F7);
                     }
+                    if (token.IsCancellationRequested)
+                    {
+                        Console.WriteLine("Cancelled");
+                    }
                 } catch (Exception ex)
                 {
 
@@ -132,31 +135,8 @@ namespace RothsFarmIt
             }
         }
 
-        Process ragnaProc = new Process();
-        static List<Thread> threadList = new List<Thread>();
-        private void startBtn_Click(object sender, EventArgs e)
-        {
-            if (ragnaProc.Container == null)
-            {
-                ragnaProc.StartInfo.FileName = "D:\\Games\\RequiemRO\\RequiemRO.lnk";
-                ragnaProc.StartInfo.UseShellExecute = true;
-                ragnaProc.Start();
-
-                loginProcedure(ragnaProc);
-            }
 
 
-            Thread thd = new Thread(() => doFarming(ragnaProc, 10));
-            Thread thd2 = new Thread(() => autoPots(ragnaProc));
-            thd.IsBackground = true;
-            threadList.Add(thd);
-            threadList.Add(thd2);
-
-            foreach (Thread th in threadList)
-            {
-                th.Start();
-            }
-        }
 
         public static void loginProcedure(Process proc)
         {
@@ -165,11 +145,11 @@ namespace RothsFarmIt
             Thread.Sleep(1000);
             pressKey(proc, Keys.Tab);
             Thread.Sleep(1000);
-            sendWords(proc, "stfu09");
+            sendWords(proc, "*");
             Thread.Sleep(1000);
             pressKey(proc, Keys.Tab);
             Thread.Sleep(1000);
-            sendWords(proc, "Deds1234");
+            sendWords(proc, "*");
             Thread.Sleep(1000);
             pressKey(proc, Keys.Enter);
             Thread.Sleep(1000);
@@ -181,52 +161,89 @@ namespace RothsFarmIt
             Thread.Sleep(1000);
         }
 
-        public static void doFarming(Process proc, int delay)
+        public static void wizFarm(Process proc, CancellationToken token)
         {
-            while (true)
+            while (!token.IsCancellationRequested)
             {
+                if (token.IsCancellationRequested)
+                {
+                    Console.WriteLine("Cancelled");
+                }
                 if (proc.HasExited)
                 {
                     proc.Start();
                     Thread.Sleep(5000);
                     loginProcedure(proc);
-                }
-                else
+                } else
                 {
-                    wizFarm(proc);
-                    Thread.Sleep(delay);
+                    IntPtr xAddr = (IntPtr)0x00E2EC74;
+                    IntPtr yAddr = (IntPtr)0x00E2EC78;
+                    pressKey(proc, Keys.F5);
+                    Thread.Sleep(50);
+                    pressKey(proc, Keys.F1);
+                    //New Era, Kratos IDS
+                    WriteBytes(proc.Handle, 0x00E2EC74, 509); //X
+                    WriteBytes(proc.Handle, 0x00E2EC78, 386); //Y
+                    Thread.Sleep(50);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        mouseClick(proc, (int)Keys.LButton);
+                    }
                 }
-                
             }
         }
 
-        public static void wizFarm(Process proc)
-        {
-            IntPtr xAddr = (IntPtr)0x00E2EC74;
-            IntPtr yAddr = (IntPtr)0x00E2EC78;
-            pressKey(proc, Keys.F9);
-            Thread.Sleep(50);
-            pressKey(proc, Keys.F1);
-            //New Era, Kratos IDS
-            WriteBytes(proc.Handle, 0x00E2EC74, 509); //X
-            WriteBytes(proc.Handle, 0x00E2EC78, 386); //Y
-            Thread.Sleep(50);
-            for (int i = 0; i < 5; i++)
-            {
-                mouseClick(proc, (int)Keys.LButton);
-            }
+        Process ragnaProc = new Process();
+        static List<Thread> threadList = new List<Thread>();
+        static CancellationTokenSource src = new CancellationTokenSource();
+        static CancellationToken ct = src.Token;
 
+        private async void startBtn_Click(object sender, EventArgs e)
+        {
+            if (ragnaProc.Container == null)
+            {
+                src = new CancellationTokenSource();
+                CancellationToken ct = src.Token;
+
+                Task t1 = Task.Run(() => wizFarm(ragnaProc, ct), ct);
+                Task t2 = Task.Run(() => autoPots(ragnaProc, ct), ct);
+
+                try
+                {
+                    await t1;
+                    await t2;
+                    //Task.WaitAny(t1, t2);
+                }
+                catch (AggregateException ae)
+                {
+                    if (ae.InnerExceptions.Any(e => e is TaskCanceledException))
+                        Console.WriteLine("Task cancelled exception detected");
+                    else
+                        throw;
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+                finally
+                {
+                    src.Dispose();
+                }
+            }
         }
 
         private void stopBtn_Click(object sender, EventArgs e)
         {
-            foreach (Thread th in threadList)
-            {
-                th.Interrupt();
-                th.Join();
-            }
-            threadList.Clear();
+            src.Cancel();
         }
 
+        private void frstLoginBtn_Click(object sender, EventArgs e)
+        {
+            ragnaProc.StartInfo.FileName = "*";
+            ragnaProc.StartInfo.UseShellExecute = true;
+            ragnaProc.Start();
+
+            loginProcedure(ragnaProc);
+        }
     }
 }
